@@ -2,7 +2,7 @@ from django import forms
 import re
 from .models import Usuario
 from django.contrib.auth.models import Group
-
+from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
 class Crear_usuario_form(forms.ModelForm):
     """
@@ -12,7 +12,7 @@ class Crear_usuario_form(forms.ModelForm):
         label='Contraseña',
         strip=False,
         widget=forms.PasswordInput,
-        help_text='La contraseña debe tener al menos 8 caracteres.'
+        help_text='La contraseña debe tener al menos 8 caracteres y una letra mayúscula.'
     )
     password2 = forms.CharField(
         label='Confirmar contraseña',
@@ -54,7 +54,17 @@ class Crear_usuario_form(forms.ModelForm):
             user.grupos.add(grupo)
         return user
 
+class Modificar_usuario_form(forms.ModelForm):
+    """
+    Formulario para actualizar los detalles de un usuario.
+    """
+    password = ReadOnlyPasswordHashField()
 
+    class Meta:
+        model = Usuario
+        fields = ( 'nombre', 'apellido', 'email', 'telefono')
+
+    
 """
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import Usuario, Paciente, ObraSocial

@@ -38,7 +38,7 @@
           {% if user.is_authenticated %}
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link disabled">Bienvenido, {{ user.first_name }}</a>
+              <a class="nav-link disabled">Bienvenido, {{ user.nombre }} {{user.apellido}}</a>
             </li>
             <li class="nav-item">
               <form action="{% url 'logout' %}" method="post">

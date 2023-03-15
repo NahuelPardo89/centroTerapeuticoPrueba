@@ -1,11 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect,get_object_or_404
 
 # Create your views here.
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, logout,login,get_user_model
 from django.contrib import messages
-from .forms import  Crear_usuario_form
+from .forms import  Crear_usuario_form, Modificar_usuario_form
 from .models import Usuario
 def is_medico(user):
     return user.grupos.filter(name='medicos').exists()
@@ -44,7 +44,7 @@ def home_paciente(request):
 @user_passes_test(is_secretaria)
 def home_secretaria(request):
     # Código para la plantilla home_secretaria.html
-    return render(request, 'secretaria/home_secretaria.html')
+    return render(request, 'secretarias/home_secretaria.html')
 
 @login_required
 def home_unauthenticated(request):
@@ -89,6 +89,59 @@ def crear_usuario(request):
         form = Crear_usuario_form()
     return render(request, 'crear_usuario.html', {'form': form})
 
+@login_required
+def modificar_usuario_logged(request):
+    user = request.user
+    if request.method == 'POST':
+        form = Modificar_usuario_form(request.POST, instance=user)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, 'El usuario se ha modificado correctamente.')
+            return redirect('home')
+    else:
+        form = Modificar_usuario_form(instance=user)
+    return render(request, 'modificar_usuario.html', {'form': form, 'user': user})
+
+@login_required
+def modificar_usuario(request,id):
+    user = Usuario.objects.get(id=id)
+    if request.method == 'POST':
+        form = Modificar_usuario_form(request.POST, instance=user)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, 'El usuario se ha modificado correctamente.')
+            return redirect('home')
+    else:
+        form = Modificar_usuario_form(instance=user)
+    return render(request, 'modificar_usuario.html', {'form': form, 'user': user})
+
+@login_required
+def listar_usuarios(request):
+    """
+    Vista que lista todos los usuarios en el sistema.
+    """
+    usuarios = Usuario.objects.all()
+    context = {
+        'usuarios': usuarios,
+    }
+    return render(request, 'listar_usuarios.html', context)
+
+
+def eliminar_usuario(request, id):
+    """
+    Vista para eliminar un usuario.
+    """
+    usuario = get_object_or_404(Usuario, id=id)
+    
+    if request.method == 'POST':
+        usuario.delete()
+        messages.success(request, f'El usuario {usuario} ha sido eliminado.')
+        return redirect('listar_usuarios')
+    
+    context = {
+        'usuario': usuario
+    }
+    return render(request, 'eliminar_usuario.html', context)
 """
 def crear_paciente(request):
     if request.method == 'POST':

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Listado de usuarios</h1>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>DNI</th>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>Email</th>
+        <th>Teléfono</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for usuario in usuarios %}
+        <tr>
+          <td>{{ usuario.dni }}</td>
+          <td>{{ usuario.nombre }}</td>
+          <td>{{ usuario.apellido }}</td>
+          <td>{{ usuario.email }}</td>
+          <td>{{ usuario.telefono }}</td>
+          <td>
+            <a class="btn btn-primary" href="{% url 'modificar_usuario' usuario.id %}">Editar</a>
+            <form style="display:inline" method="post" action="{% url 'eliminar_usuario' usuario.id %}">
+              {% csrf_token %}
+              <button class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#eliminarModal{{ usuario.id }}">Eliminar</button>
+
+              <!-- Modal -->
+              <div class="modal fade" id="eliminarModal{{ usuario.id }}" tabindex="-1" aria-labelledby="eliminarModal{{ usuario.id }}Label" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="eliminarModal{{ usuario.id }}Label">Eliminar usuario</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                      ¿Estás seguro que deseas eliminar al usuario {{ usuario.nombre }} {{ usuario.apellido }}?
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6">No se encontraron usuarios.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
