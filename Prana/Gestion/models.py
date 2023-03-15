@@ -7,9 +7,23 @@ from django.dispatch import receiver
 class UsuarioManager(BaseUserManager):
     def _create_user(self, dni, password, is_staff, is_superuser, **extra_fields):
         if not dni:
-            raise ValueError('El DNI debe ser obligatorio.')
+            raise ValueError('El DNI es obligatorio.')
+        
+        # Validar campos obligatorios
+        nombre = extra_fields.get('nombre')
+        apellido = extra_fields.get('apellido')
+        email = extra_fields.get('email')
+        telefono = extra_fields.get('telefono')
+        if not nombre:
+            raise ValueError('El nombre es obligatorio.')
+        if not apellido:
+            raise ValueError('El apellido es obligatorio.')
+        if not email:
+            raise ValueError('El email es obligatorio.')
+        
+
         user = self.model(
-            dni=self.normalize_email(dni),
+            dni=dni,
             is_staff=is_staff,
             is_superuser=is_superuser,
             **extra_fields
@@ -21,11 +35,13 @@ class UsuarioManager(BaseUserManager):
     def create_user(self, dni, password=None, **extra_fields):
         return self._create_user(dni, password, False, False, **extra_fields)
 
+
     def create_superuser(self, dni, password=None, **extra_fields):
         return self._create_user(dni, password, True, True, **extra_fields)
 
+
 class Usuario(AbstractBaseUser):
-    dni = models.CharField(unique=True, max_length=11)
+    dni = models.IntegerField(unique=True)
     nombre = models.CharField(max_length=30)
     apellido = models.CharField(max_length=30)
     email = models.EmailField(max_length=60)
