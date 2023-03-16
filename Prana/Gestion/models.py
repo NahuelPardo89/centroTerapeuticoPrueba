@@ -45,7 +45,7 @@ class Usuario(AbstractBaseUser):
     nombre = models.CharField(max_length=30)
     apellido = models.CharField(max_length=30)
     email = models.EmailField(max_length=60)
-    telefono = models.CharField(max_length=9)
+    telefono = models.CharField(max_length=12)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -66,27 +66,42 @@ class Usuario(AbstractBaseUser):
     REQUIRED_FIELDS = ['nombre', 'apellido', 'email', 'telefono']
 
     objects = UsuarioManager()
-
+    def get_full_name(self):
+        return f'{self.nombre} {self.apellido}'
+    @property
+    def get_short_name(self):
+        return self.nombre
+    @property
     def __str__(self):
         return f'{self.nombre} {self.apellido}'
 
-class Paciente(Usuario):
+class Paciente(models.Model):
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
     direccion = models.CharField(max_length=70)
     instagram = models.CharField(max_length=50, null=True, blank=True)
     facebook = models.CharField(max_length=50, null=True, blank=True)
     numero_obra_social = models.CharField(max_length=50, null=True, blank=True)
     obras_sociales = models.ManyToManyField('ObraSocial', blank=True)
+    
 
     class Meta:
+        verbose_name='Paciente'
         verbose_name_plural = 'Pacientes'
+    def __str__(self):
+        return f'{self.usuario.nombre} {self.usuario.apellido}'
 
-class Medico(Usuario):
+class Medico(models.Model):
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
     especialidades = models.ManyToManyField('EspecialidadMedica')
     matricula = models.IntegerField()
     obra_social = models.ManyToManyField('ObraSocial', blank=True, through='PrecioConsulta')
 
     class Meta:
+        verbose_name='Medico'
         verbose_name_plural = 'Medicos'
+
+    def __str__(self):
+        return f'{self.usuario.nombre} {self.usuario.apellido}'
 
 class EspecialidadMedica(models.Model):
     nombre = models.CharField(max_length=100)
@@ -94,16 +109,26 @@ class EspecialidadMedica(models.Model):
 
     class Meta:
         verbose_name_plural = 'Especialidades'
+    
+    def __str__(self):
+        return self.nombre
 
 class ObraSocial(models.Model):
     nombre = models.CharField(max_length=100)
     medicos = models.ManyToManyField('Medico', blank=True, through='PrecioConsulta')
+    pacientes = models.ManyToManyField('Paciente', blank=True)
+    
+    def __str__(self):
+        return self.nombre
 
 class PrecioConsulta(models.Model):
     medico = models.ForeignKey('Medico', on_delete=models.CASCADE)
     obra_social = models.ForeignKey('ObraSocial', on_delete=models.CASCADE)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    fecha_vigencia = models.DateTimeField()
+    fecha_vigencia = models.DateField()
+
+    def __str__(self):
+        return f'{self.medico} - {self.obra_social}: {self.precio}'
 
 class Turno(models.Model):
     paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE)
@@ -112,27 +137,18 @@ class Turno(models.Model):
     hora = models.TimeField()
     obra_social = models.ForeignKey(ObraSocial, on_delete=models.SET_NULL, null=True, blank=True)
     confirmado = models.BooleanField(default=False)
-
+    class Meta:
+        ordering = ['fecha', 'hora']
     def __str__(self):
         return f'Turno con {self.paciente} el {self.fecha} a las {self.hora}'
 
 
 
     
-    
-@receiver(post_save, sender=Turno)
-class Consulta(models.Model):
-    turno = models.OneToOneField(Turno, on_delete=models.CASCADE, related_name='consulta')
-    precio = models.DecimalField(max_digits=6, decimal_places=2)
-
-    def __str__(self):
-        return f'Consulta de {self.turno.paciente} con {self.turno.medico} el {self.turno.fecha} a las {self.turno.hora}'
-
-@receiver(post_save, sender=Turno)
+@receiver(post_save, sender=Turno)    
 def crear_consulta(sender, instance, created, **kwargs):
     if instance.confirmado:
         obra_social = instance.obra_social
-        precio = 0
         if obra_social:
             precio = instance.medico.obra_social.through.objects.get(
                 medico=instance.medico,
@@ -143,3 +159,10 @@ def crear_consulta(sender, instance, created, **kwargs):
                 medico=instance.medico
             ).first().precio
         Consulta.objects.create(turno=instance, precio=precio)
+
+class Consulta(models.Model):
+    turno = models.OneToOneField(Turno, on_delete=models.CASCADE, related_name='consulta')
+    precio = models.DecimalField(max_digits=6, decimal_places=2)
+
+    def __str__(self):
+        return f'Consulta de {self.turno.paciente} con {self.turno.medico} el {self.turno.fecha} a las {self.turno.hora}'

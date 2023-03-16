@@ -5,8 +5,8 @@ from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, logout,login,get_user_model
 from django.contrib import messages
-from .forms import  Crear_usuario_form, Modificar_usuario_form
-from .models import Usuario
+from .forms import  Crear_usuario_form, Modificar_usuario_form, Crear_paciente_form
+from .models import Usuario, Paciente
 def is_medico(user):
     return user.grupos.filter(name='medicos').exists()
 
@@ -50,6 +50,8 @@ def home_secretaria(request):
 def home_unauthenticated(request):
     # Código para la plantilla home_unauthenticated.html
     return render(request, 'home_unauthenticated.html')
+################################## LOGIN #######################################
+
 def login_view(request):
     if request.method == 'POST':
         dni = request.POST['dni']
@@ -71,8 +73,18 @@ def cerrar_sesion(request):
     return redirect('home')
 
 
+################### CRUD USUARIO ###############################
 
-
+#@login_required
+def listar_usuarios(request):
+    """
+    Vista que lista todos los usuarios en el sistema.
+    """
+    usuarios = Usuario.objects.all()
+    context = {
+        'usuarios': usuarios,
+    }
+    return render(request, 'listar_usuarios.html', context)
 
 
 def crear_usuario(request):
@@ -89,7 +101,7 @@ def crear_usuario(request):
         form = Crear_usuario_form()
     return render(request, 'crear_usuario.html', {'form': form})
 
-@login_required
+#@login_required
 def modificar_usuario_logged(request):
     user = request.user
     if request.method == 'POST':
@@ -102,7 +114,7 @@ def modificar_usuario_logged(request):
         form = Modificar_usuario_form(instance=user)
     return render(request, 'modificar_usuario.html', {'form': form, 'user': user})
 
-@login_required
+#@login_required
 def modificar_usuario(request,id):
     user = Usuario.objects.get(id=id)
     if request.method == 'POST':
@@ -115,16 +127,7 @@ def modificar_usuario(request,id):
         form = Modificar_usuario_form(instance=user)
     return render(request, 'modificar_usuario.html', {'form': form, 'user': user})
 
-@login_required
-def listar_usuarios(request):
-    """
-    Vista que lista todos los usuarios en el sistema.
-    """
-    usuarios = Usuario.objects.all()
-    context = {
-        'usuarios': usuarios,
-    }
-    return render(request, 'listar_usuarios.html', context)
+
 
 
 def eliminar_usuario(request, id):
@@ -135,29 +138,70 @@ def eliminar_usuario(request, id):
     
     if request.method == 'POST':
         usuario.delete()
-        messages.success(request, f'El usuario {usuario} ha sido eliminado.')
+        messages.success(request, f'El usuario {usuario.get_full_name()} ha sido eliminado.')
         return redirect('listar_usuarios')
     
     context = {
         'usuario': usuario
     }
     return render(request, 'eliminar_usuario.html', context)
-"""
+
+
+################################ CRUD PACIENTE ##################################
+def listar_pacientes(request):
+    pacientes = Paciente.objects.all()
+    context = {'pacientes': pacientes}
+    return render(request, 'pacientes/listar_pacientes.html', context)
+
 def crear_paciente(request):
     if request.method == 'POST':
-        usuario_form = Crear_usuario_form(request.POST)
-        paciente_form = Crear_Paciente_form(request.POST)
+        usuario_form = Crear_usuario_form(request.POST, prefix='usuario')
+        paciente_form = Crear_paciente_form(request.POST, prefix='paciente')
         if usuario_form.is_valid() and paciente_form.is_valid():
             usuario = usuario_form.save()
-            usuario.groups.add('Pacientes') # Agrega el usuario al grupo 'Pacientes'
             paciente = paciente_form.save(commit=False)
-            paciente.usuario_ptr = usuario
+            paciente.usuario = usuario
             paciente.save()
-            return redirect('perfil_paciente', paciente.pk)
+            return redirect('listar_pacientes')
     else:
-        usuario_form = Crear_usuario_form()
-        paciente_form = Crear_Paciente_form()
-    return render(request, 'crear_paciente.html', {'usuario_form': usuario_form, 'paciente_form': paciente_form})
+        usuario_form = Crear_usuario_form(prefix='usuario')
+        paciente_form = Crear_paciente_form(prefix='paciente')
+    return render(request, 'pacientes/crear_paciente.html', {'usuario_form': usuario_form, 'paciente_form': paciente_form})
 
-"""
+def modificar_paciente(request, id):
+    paciente = get_object_or_404(Paciente, usuario__id=id)
+    usuario = paciente.usuario
 
+    if request.method == 'POST':
+        form_paciente = PacienteForm(request.POST, instance=paciente)
+        form_usuario = UsuarioForm(request.POST, instance=usuario)
+
+        if form_paciente.is_valid() and form_usuario.is_valid():
+            form_paciente.save()
+            form_usuario.save()
+            messages.success(request, f'El paciente {paciente} ha sido actualizado.')
+            return redirect('listar_pacientes')
+    else:
+        form_paciente = PacienteForm(instance=paciente)
+        form_usuario = UsuarioForm(instance=usuario)
+
+    context = {
+        'form_paciente': form_paciente,
+        'form_usuario': form_usuario
+    }
+    return render(request, 'pacientes/modificar_paciente.html', context)
+
+def eliminar_paciente(request, id):
+    paciente = get_object_or_404(Paciente, usuario__id=id)
+    usuario = paciente.usuario
+
+    if request.method == 'POST':
+        paciente.delete()
+        usuario.delete()
+        messages.success(request, f'El paciente {paciente} y su usuario asociado han sido eliminados.')
+        return redirect('listar_pacientes')
+
+    context = {
+        'paciente': paciente
+    }
+    return render(request, 'pacientes/eliminar_paciente.html', context)

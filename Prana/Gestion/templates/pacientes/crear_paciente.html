@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Crear Paciente</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ usuario_form.as_p }}
+        {{ paciente_form.as_p }}
+        <button type="submit">Crear Paciente</button>
+    </form>
+{% endblock %}

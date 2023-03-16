@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Actualizar Paciente</h2>
+    <form method="post">
+        {% csrf_token %}
+        <h3>Datos del usuario</h3>
+        {{ form_usuario.as_p }}
+        <h3>Datos del paciente</h3>
+        {{ form_paciente.as_p }}
+        <button type="submit">Actualizar</button>
+    </form>
+{% endblock %}

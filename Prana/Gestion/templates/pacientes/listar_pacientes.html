@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Listado de Pacientes</h2>
+    <a href="{% url 'crear_paciente' %}">Crear Paciente</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Dni</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for paciente in pacientes %}
+                <tr>
+                    <td>{{ paciente.usuario.dni }}</td>
+                    <td>{{ paciente.usuario.nombre }}</td>
+                    <td>{{ paciente.usuario.apellido }}</td>
+                    <td>{{ paciente.usuario.email }}</td>
+                    <td>{{ paciente.usuario.telefono }}</td>
+                    <td>{{ paciente.direccion }}</td>
+                    <td>
+                        <a href="{% url 'modificar_paciente' paciente.pk %}">Editar</a>
+                        <a href="{% url 'eliminar_paciente' paciente.pk %}">Eliminar</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6">No hay pacientes registrados.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
